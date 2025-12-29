@@ -1,0 +1,41 @@
+{
+    "BTCZ" : {
+        "name": "BitcoinZ",
+        "api": "https://explorer.btcz.rocks/api"
+    },
+
+    "ZEC" : {
+        "name": "Zcash",
+        "api": "https://zecblockexplorer.com/api/v2"
+    },
+
+    "LTZ" : {
+        "name": "LitecoinZ",
+        "api": "https://insight.litecoinz.org/api"
+    },
+
+    "ZERC" : {
+        "name": "ZeroClassic",
+        "api": "https://insight.zeroclassic.org/api"
+    },
+
+    "ZER" : {
+        "name": "Zero",
+        "api": "https://explorer.zer.zelcore.io/api"
+    },
+
+    "ZCL" : {
+        "name": "Zclassic",
+        "api": "https://explorer.zcl.zelcore.io/api"
+    },
+
+    "GLINK" : {
+        "name": "Gemlink",
+        "api": "https://explorer.gemlink.org/api"
+    },
+
+    "YEC" : {
+        "name": "Ycash",
+        "api": "https://yecblockexplorer.com/api/v2"
+    }
+}

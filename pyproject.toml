@@ -1,0 +1,166 @@
+
+[tool.briefcase]
+project_name = "InsightWallet"
+bundle = "com.btcz.insightwallet"
+version = "1.0.0"
+url = "https://getbtcz.com"
+license.file = "LICENSE"
+author = "BTCZCommunity"
+author_email = "None"
+
+[tool.briefcase.app.insightwallet]
+formal_name = "InsightWallet"
+description = "Insight is a non-custodial crypto wallet that supports multiple wallets and broadcasts signed raw transactions through Insight Explorer APIs, giving users full control over their funds and privacy"
+long_description = """More details about the app should go here.
+"""
+icon = "insightwallet/resources/insightwallet"
+sources = [
+    "insightwallet",
+]
+test_sources = [
+    "tests",
+]
+
+requires = ["-r", "requirements.txt"]
+test_requires = [
+    "pytest",
+]
+
+[tool.briefcase.app.insightwallet.macOS]
+universal_build = true
+requires = [
+    "toga-cocoa==0.5.3",
+    "std-nslog~=1.0.3",
+]
+
+[tool.briefcase.app.insightwallet.linux]
+requires = [
+    "toga-gtk==0.5.3",
+    # PyGObject 3.52.1 enforces a requirement on libgirepository-2.0-dev. This library
+    # isn't available on Debian 12/Ubuntu 22.04. If you don't need to support those (or
+    # older) releases, you can remove this version pin. See beeware/toga#3143.
+    "pygobject < 3.52.1",
+]
+
+[tool.briefcase.app.insightwallet.linux.system.debian]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "libcairo2-dev",
+    # One of the following two packages are needed to compile PyGObject wheel. If you
+    # remove the pygobject pin in the requires list, you should also change to the
+    # version 2.0 of the girepository library. See beeware/toga#3143.
+    "libgirepository1.0-dev",
+    # "libgirepository-2.0-dev",
+]
+
+system_runtime_requires = [
+    # Needed to provide GTK and its GI bindings
+    "gir1.2-gtk-3.0",
+    # One of the following two packages are needed to use PyGObject at runtime. If you
+    # remove the pygobject pin in the requires list, you should also change to the
+    # version 2.0 of the girepository library. See beeware/toga#3143.
+    "libgirepository-1.0-1",
+    # "libgirepository-2.0-0",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra-gtk3-module",
+    # Needed to provide WebKit2 at runtime
+    # Note: Debian 11 requires gir1.2-webkit2-4.0 instead
+    # "gir1.2-webkit2-4.1",
+]
+
+[tool.briefcase.app.insightwallet.linux.system.rhel]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo-gobject-devel",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection-devel",
+]
+
+system_runtime_requires = [
+    # Needed to support Python bindings to GTK
+    "gobject-introspection",
+    # Needed to provide GTK
+    "gtk3",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra-gtk3",
+    # Needed to provide WebKit2 at runtime
+    # "webkit2gtk3",
+]
+
+[tool.briefcase.app.insightwallet.linux.system.suse]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo-devel",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection-devel",
+]
+
+system_runtime_requires = [
+    # Needed to provide GTK
+    "gtk3",
+    # Needed to support Python bindings to GTK
+    "gobject-introspection", "typelib(Gtk) = 3.0",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra-gtk3-module",
+    # Needed to provide WebKit2 at runtime
+    # "libwebkit2gtk3", "typelib(WebKit2)",
+]
+
+[tool.briefcase.app.insightwallet.linux.system.arch]
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection",
+    # Runtime dependencies that need to exist so that the
+    # Arch package passes final validation.
+    # Needed to provide GTK
+    "gtk3",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra",
+    # Needed to provide WebKit2
+    # "webkit2gtk",
+]
+
+system_runtime_requires = [
+    # Needed to provide GTK
+    "gtk3",
+    # Needed to provide PyGObject bindings
+    "gobject-introspection-runtime",
+    # Dependencies that GTK looks for at runtime
+    "libcanberra",
+    # Needed to provide WebKit2 at runtime
+    # "webkit2gtk",
+]
+
+[tool.briefcase.app.insightwallet.linux.appimage]
+manylinux = "manylinux_2_28"
+
+system_requires = [
+    # Needed to compile pycairo wheel
+    "cairo-gobject-devel",
+    # Needed to compile PyGObject wheel
+    "gobject-introspection-devel",
+    # Needed to provide GTK
+    "gtk3-devel",
+    # Dependencies that GTK looks for at runtime, that need to be
+    # in the build environment to be picked up by linuxdeploy
+    "libcanberra-gtk3",
+    "PackageKit-gtk3-module",
+    "gvfs-client",
+]
+
+linuxdeploy_plugins = [
+    "DEPLOY_GTK_VERSION=3 gtk",
+]
+
+[tool.briefcase.app.insightwallet.linux.flatpak]
+flatpak_runtime = "org.gnome.Platform"
+flatpak_runtime_version = "48"
+flatpak_sdk = "org.gnome.Sdk"
+
+[tool.briefcase.app.insightwallet.windows]
+requires = [
+    "toga-winforms==0.5.3",
+]
+
