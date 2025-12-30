@@ -72,11 +72,22 @@ jobs:
 
       - name: Package App
         run: |
-          briefcase package \
-            ${{ matrix.platform || matrix.target }} \
-            ${{ matrix.output-format }} \
-            --update --no-input --log \
-            ${{ matrix.briefcase-args }}
+          if [ "${{ matrix.target }}" == "macOS" ]; then
+            briefcase package macOS app \
+              --update \
+              --no-input \
+              --log \
+              --adhoc-sign \
+              ${{ matrix.briefcase-args }}
+          else
+            briefcase package \
+              ${{ matrix.platform || matrix.target }} \
+              ${{ matrix.output-format }} \
+              --update \
+              --no-input \
+              --log \
+              ${{ matrix.briefcase-args }}
+          fi
 
       - name: Upload App
         uses: actions/upload-artifact@v4
