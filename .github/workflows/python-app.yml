@@ -1,0 +1,86 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FORCE_COLOR: "1"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    name: Package
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ["Ubuntu", "Windows", "macOS"]
+        include:
+          - target: "Ubuntu"
+            platform: "Linux"
+            output-format: "system"
+            runs-on: "ubuntu-latest"
+            pre-command: |
+              sudo apt-get update --fix-missing
+              sudo apt-get install -y \
+                socat libcairo2-dev libgirepository1.0-dev gir1.2-gtk-3.0 \
+                libcanberra-gtk3-module build-essential git uuid-dev libblkid-dev libmount-dev
+            briefcase-run-prefix: "xvfb-run"
+            briefcase-args: "--target ubuntu"
+
+          - target: "Windows"
+            output-format: "app"
+            runs-on: "windows-latest"
+
+          - target: "macOS"
+            output-format: "app"
+            runs-on: "macos-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Briefcase
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install briefcase==0.3.26
+
+      - name: Setup Environment
+        run: ${{ matrix.pre-command }}
+
+      - name: Build App
+        run: |
+          ${{ matrix.briefcase-run-prefix }} \
+          briefcase build \
+            ${{ matrix.platform || matrix.target }} \
+            ${{ matrix.output-format }} \
+            ${{ matrix.briefcase-args }}
+
+      - name: Package App
+        run: |
+          briefcase package \
+            ${{ matrix.platform || matrix.target }} \
+            ${{ matrix.output-format }} \
+            --update --no-input --log \
+            ${{ matrix.briefcase-args }}
+
+      - name: Upload App
+        uses: actions/upload-artifact@v4
+        with:
+          name: InsightWallet-${{ matrix.target }}
+          path: dist
+          if-no-files-found: warn
