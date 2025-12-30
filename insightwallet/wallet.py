@@ -66,7 +66,9 @@ class Wallet(Box):
         self.h_divider = Divider(
             direction=Direction.HORIZONTAL,
             style=Pack(
-                width=850
+                flex=1,
+                margin_left=15,
+                margin_right=15
             )
         )
 
@@ -78,10 +80,12 @@ class Wallet(Box):
             )
         )
 
-        self.v_divider = Divider(
+        v_divider = Divider(
             direction=Direction.VERTICAL,
             style=Pack(
-                height=400
+                flex=1,
+                margin_top=15,
+                margin_bottom=15
             )
         )
 
@@ -141,7 +145,7 @@ class Wallet(Box):
         )
         self.wallet_container.add(
             self.coins_panel,
-            self.v_divider,
+            v_divider,
             self.coin_manage
         )
         self.coins_panel.add(
@@ -241,8 +245,8 @@ class Wallet(Box):
     async def generate_address(self, coin):
         coin_info = self.app.utils.get_coin(coin)
         network = coin_info["network"]
-        mktx = str(self.app.utils.get_tool())
-        cmd = [mktx, "--network", network, "--gen-address"]
+        wallet_cli = str(self.app.utils.get_tool())
+        cmd = [wallet_cli, "--network", network, "--gen-address"]
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,

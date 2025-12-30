@@ -38,8 +38,7 @@ class InsightWallet(App):
         self.api = InsightAPI(self)
         self.setup = Setup(self)
         self.main_window = Window(
-            title=f"{self.formal_name} v{self.version}",
-            resizable=False
+            title=f"{self.formal_name} v{self.version}"
         )
         self.set_window_params()
         self.main_window.content = self.setup
