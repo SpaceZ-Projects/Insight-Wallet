@@ -4,8 +4,8 @@ import subprocess
 from datetime import datetime, timezone
 import json
 
-from toga import App, Box, ImageView, Button, Label, Table, TextInput, OptionContainer, OptionItem, Divider
-from toga.constants import COLUMN, ROW, CENTER, BOLD, ITALIC, Direction
+from toga import App, Box, ImageView, Button, Label, Table, TextInput, OptionContainer, OptionItem, Divider, ProgressBar
+from toga.constants import COLUMN, ROW, CENTER, BOLD, ITALIC, Direction, END
 from toga.style.pack import Pack
 from toga.colors import RED, GRAY, GREEN
 from toga.platform import current_platform
@@ -68,7 +68,7 @@ class Coin(Box):
         )
 
         self.balance_label = Label(
-            text="Balance :",
+            text="Balance : 0.00000000",
             style=Pack(
                 font_size=10,
                 font_weight=BOLD
@@ -92,7 +92,7 @@ class Coin(Box):
         )
 
         self.blocks_label = Label(
-            text="Height :",
+            text="Height : 0",
             style=Pack(
                 font_size=10,
                 font_weight=BOLD,
@@ -167,6 +167,7 @@ class Coin(Box):
                 direction=COLUMN,
                 flex=1,
                 align_items=CENTER,
+                justify_content=CENTER,
                 gap=10
             )
         )
@@ -189,7 +190,7 @@ class Coin(Box):
             placeholder=" enter address",
             style=Pack(
                 font_size=12,
-                flex=1
+                width=500
             )
         )
 
@@ -265,9 +266,27 @@ class Coin(Box):
                 width=120,
                 font_size=12,
                 font_weight=BOLD,
-                margin_left=450
+                margin_left=115,
+                margin_bottom=20
             ),
             on_press=self.verify_inputs
+        )
+
+        self.send_progress = ProgressBar(
+            max=100,
+            style=Pack(
+                width=100,
+                margin_left=10,
+                margin_bottom=23
+            )
+        )
+
+        self.send_buttons = Box(
+            style=Pack(
+                direction=ROW,
+                flex=1,
+                align_items=END
+            )
         )
 
         self.send_page = Box(
@@ -329,7 +348,7 @@ class Coin(Box):
             self.destination_box,
             self.amount_box,
             self.fee_box,
-            self.send_button
+            self.send_buttons
         )
         self.destination_box.add(
             self.destination_label,
@@ -338,6 +357,9 @@ class Coin(Box):
         self.amount_box.add(
             self.amount_label,
             self.amount_input
+        )
+        self.send_buttons.add(
+            self.send_button
         )
         self.fee_box.add(
             self.fee_label,
@@ -358,17 +380,43 @@ class Coin(Box):
             view_command.Click += self.open_in_explorer
             context_menu.Items.Add(view_command)
             self.transaction_table._impl.native.ContextMenuStrip = context_menu
+        elif platfrom == "linux":
+            from gi.repository import Gtk, Gdk
+            context_menu = Gtk.Menu()
+            view_command = Gtk.MenuItem()
+            view_command.set_label("Open in explorer")
+            view_command.connect("activate", self.open_in_explorer)
+            context_menu.append(view_command)
+            context_menu.show_all()
+            tree = self.transaction_table._impl.native.get_child()
+            def on_button_press(widget, event):
+                if event.button == Gdk.BUTTON_SECONDARY:
+                    context_menu.popup_at_pointer(event)
+                    return True
+                return False
+            tree.connect("button-press-event", on_button_press)
 
 
-    def open_in_explorer(self, event, sender):
+    def open_in_explorer(self, *args):
         url = self.app.api.base_url.rstrip("/")
         blockbook_coins = {"ZEC", "YEC"}
         if self.app.coin in blockbook_coins:
             url = url.rstrip("/api") + "/api/v2"
         elif url.endswith("/api"):
             url = url[:-4]
-        lv = self.transaction_table._impl.native
-        for index in lv.SelectedIndices:
+        native = self.transaction_table._impl.native
+        indices = []
+        if hasattr(native, "SelectedIndices"):
+            indices = native.SelectedIndices
+        else:
+            from gi.repository import Gtk
+            treeview = native.get_child()
+            if not isinstance(treeview, Gtk.TreeView):
+                return
+            selection = treeview.get_selection()
+            m, paths = selection.get_selected_rows()
+            indices = [path.get_indices()[0] for path in paths]
+        for index in indices:
             txid = self.transactions_data[index]
             full_url = url + "/tx/" + txid
             import webbrowser
@@ -536,6 +584,8 @@ class Coin(Box):
 
 
     def disable_send(self):
+        self.send_buttons.add(self.send_progress)
+        self.send_progress.value = 5
         self.send_button.text = "Sending..."
         self.send_button.enabled = False
         self.destination_input.readonly = True
@@ -544,6 +594,7 @@ class Coin(Box):
 
 
     def enable_send(self):
+        self.send_buttons.remove(self.send_progress)
         self.send_button.text = "Broadcast"
         self.destination_input.readonly = False
         self.amount_input.readonly = False
@@ -554,8 +605,8 @@ class Coin(Box):
     async def verify_inputs(self, button):
         destination = self.destination_input.value.strip()
         try:
-            amount_sat = int(float(self.amount_input.value) * 100_000_000)
-            fee_sat = int(float(self.fee_input.value) * 100_000_000)
+            amount_sat = int(round(float(self.amount_input.value) * 100_000_000))
+            fee_sat = int(round(float(self.fee_input.value) * 100_000_000))
         except (TypeError, ValueError):
             self.app.main_window.error_dialog(
                 "Error", "Invalid amount or fee"
@@ -573,12 +624,18 @@ class Coin(Box):
             )
             return
         utxos = await self.app.api.get_utxos(self.address)
+        if not utxos:
+            self.app.main_window.error_dialog(
+                "Error", "No UTXOs available"
+            )
+            return
+        utxos.sort(key=lambda u: u.get("confirmations", 0), reverse=True)
         total_input = 0
         inputs_to_use = []
         for u in utxos:
-            if u.get("confirmations", 0) == 0:
+            if u.get("confirmations", 0) <= 0:
                 continue
-            value_sat = int(float(u["amount"]) * 100_000_000)
+            value_sat = int(round(float(u["amount"]) * 100_000_000))
             inputs_to_use.append(u)
             total_input += value_sat
             if total_input >= amount_sat + fee_sat:
@@ -593,20 +650,31 @@ class Coin(Box):
 
 
     async def send_transaction(self, inputs_to_use, destination, amount_sat, fee_sat):
-        wif = self.app.vault.get_coin_wif(self.app.account, self.app.password, self.app.coin)
+        wif = self.app.vault.get_coin_wif(
+            self.app.account,
+            self.app.password,
+            self.app.coin
+        )
+        if not wif:
+            self.app.main_window.error_dialog(
+                "Error", "Failed to unlock private key"
+            )
+            self.enable_send()
+            return
+        self.send_progress.value = 10
         network = self.name.lower()
-        mktx = str(self.app.utils.get_tool())
+        wallet_cli = str(self.app.utils.get_tool())
         utxos = [
             {
                 "txid": u["txid"],
                 "vout": int(u["vout"]),
-                "satoshis": int(u["amount"] * 100_000_000),
-                "scriptPubKey": u.get("scriptPubKey", "")
-            } for u in inputs_to_use
+                "satoshis": int(round(float(u["amount"]) * 100_000_000))
+            }
+            for u in inputs_to_use
         ]
         block_height = await self.app.api.get_block_height()
         cmd = [
-            mktx,
+            wallet_cli,
             "--network", network,
             "--wif", wif,
             "--to", destination,
@@ -626,27 +694,40 @@ class Coin(Box):
             stdout, stderr = await process.communicate()
             if process.returncode != 0:
                 self.app.main_window.error_dialog(
-                    "Error", f"Failed to build transaction: {stderr.decode()}"
+                    "Transaction error",
+                    stderr.decode().strip() or "Transaction build failed"
                 )
                 self.enable_send()
                 return
             raw_tx_hex = stdout.decode().strip()
+            if not raw_tx_hex or len(raw_tx_hex) < 20:
+                self.app.main_window.error_dialog(
+                    "Error", "Invalid raw transaction returned"
+                )
+                self.enable_send()
+                return
+            self.send_progress.value = 50
             success, error = await self.app.api.broadcast_tx(raw_tx_hex)
             if success:
+                async def on_result(widget, result):
+                    self.destination_input.value = ""
+                    self.amount_input.value = ""
+                    self.fee_input.value = "0.00001000"
+                    self.enable_send()
+                    await self.fetch_transactions()
+                self.send_progress.value = 100
                 self.app.main_window.info_dialog(
-                    "Success", "Transaction broadcast successfully"
+                    "Success", "Transaction broadcast successfully",
+                    on_result=on_result
                 )
-                self.destination_input.value = ""
-                self.amount_input.value = ""
-                self.fee_input.value = "0.00001000"
-                await self.fetch_transactions()
             else:
                 self.app.main_window.error_dialog(
                     "Broadcast failed", error or "Unknown error"
                 )
-            self.enable_send()
+                self.enable_send()
         except Exception as e:
             self.app.main_window.error_dialog(
                 "Error", f"Transaction build error: {e}"
             )
             self.enable_send()
+
