@@ -20,9 +20,9 @@ from toga.images import Image
 
 #https://github.com/ezzygarmyz/bitgo-utxo-lib-z
 TOOL_SHA256 = {
-    "windows": "f5733aa845430b04e843d69cc9ca075a722d27e4e555f1448a98d46c6b853143",
-    "linux":   "5961ea3ca5db48e62251730908dc55920037905063806327e33c094d6b4406c8",
-    "darwin":  "26ef18c2d78d54b89daaca751ac7fca48ddf29636aef232f873526d140e30a68",
+    "windows": "22f837f2413b55e463c7ad0085fbe0da3e9805474d22513db5185e620c959b39",
+    "linux":   "8cc416cbee0c268cde0fc65dbc86bdd9859b540ae15ba4a48f7fb22be75797c7",
+    "darwin":  "bb2e84da2c4abde19694682c62dab3ebb9da03fdfbc7201f48ae1016ed6f9913",
 }
 
 class Utils:
@@ -62,6 +62,7 @@ class Utils:
         formatted_balance = f"{integer_part}.{formatted_decimal}"
         return formatted_balance
     
+    
     def apply_title_bar_mode(self, window): 
         try:
             import ctypes
@@ -79,11 +80,11 @@ class Utils:
     def get_tool(self):
         platfom = current_platform
         if platfom == "windows":
-            file_name = "mktx.exe"
+            file_name = "wallet-cli.exe"
         elif platfom == "linux":
-            file_name = "mktx"
+            file_name = "wallet-cli"
         elif platfom == "darwin":
-            file_name = "mktxmac"
+            file_name = "walletmac-cli"
         return self.app.paths.data / file_name
 
 
@@ -147,11 +148,11 @@ class Utils:
     async def fetch_tool(self, setup, label, progress_bar):
         platfom = current_platform
         if platfom == "windows":
-            file_name = "mktx.exe"
+            file_name = "wallet-cli.exe"
         elif platfom == "linux":
-            file_name = "mktx"
+            file_name = "wallet-cli"
         elif platfom == "darwin":
-            file_name = "mktxmac"
+            file_name = "walletmac-cli"
         url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.0.0/"
         destination = self.app.paths.data / file_name
         self.progress = 0
