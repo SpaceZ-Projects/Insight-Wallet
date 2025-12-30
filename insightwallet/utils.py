@@ -20,9 +20,9 @@ from toga.images import Image
 
 #https://github.com/ezzygarmyz/bitgo-utxo-lib-z
 TOOL_SHA256 = {
-    "windows": "f86fd566a29520b3740ba7ad7ee32f84118c486ebd5c5e12d1ff209ecf4c1d5d",
-    "linux":   "a416a05c84f07424a73472a47bc88edcaff2f9acba249bc050ef3c1bd1421ebe",
-    "darwin":  "be4cd82b22db1b15e50bac9b66ccdc2c3a38a68c7cdc9812b942ec52e311871b",
+    "windows": "f5733aa845430b04e843d69cc9ca075a722d27e4e555f1448a98d46c6b853143",
+    "linux":   "5961ea3ca5db48e62251730908dc55920037905063806327e33c094d6b4406c8",
+    "darwin":  "26ef18c2d78d54b89daaca751ac7fca48ddf29636aef232f873526d140e30a68",
 }
 
 class Utils:

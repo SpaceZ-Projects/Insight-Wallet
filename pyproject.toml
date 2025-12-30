@@ -21,14 +21,7 @@ test_sources = [
     "tests",
 ]
 
-requires = [
-    "aiohttp==3.13.2",
-    "qrcode==8.2",
-    "pillow==12.0.0",
-    "pynacl==1.6.1",
-    "git+https://github.com/ezzygarmyz/hdwallet.git",
-    "certifi==2025.11.12"
-]
+requires = []
 test_requires = [
     "pytest",
 ]
@@ -38,6 +31,11 @@ universal_build = true
 requires = [
     "toga-cocoa==0.5.3",
     "std-nslog~=1.0.3",
+    "aiohttp==3.13.2",
+    "qrcode==8.2",
+    "pillow==12.0.0",
+    "pynacl==1.6.1",
+    "certifi==2025.11.12"
 ]
 
 [tool.briefcase.app.insightwallet.linux]
@@ -47,6 +45,12 @@ requires = [
     # isn't available on Debian 12/Ubuntu 22.04. If you don't need to support those (or
     # older) releases, you can remove this version pin. See beeware/toga#3143.
     "pygobject < 3.52.1",
+    "aiohttp==3.13.2",
+    "qrcode==8.2",
+    "pillow==12.0.0",
+    "pynacl==1.6.1",
+    "git+https://github.com/ezzygarmyz/hdwallet.git",
+    "certifi==2025.11.12"
 ]
 
 [tool.briefcase.app.insightwallet.linux.system.debian]
@@ -169,5 +173,11 @@ flatpak_sdk = "org.gnome.Sdk"
 [tool.briefcase.app.insightwallet.windows]
 requires = [
     "toga-winforms==0.5.3",
+    "aiohttp==3.13.2",
+    "qrcode==8.2",
+    "pillow==12.0.0",
+    "pynacl==1.6.1",
+    "git+https://github.com/ezzygarmyz/hdwallet.git",
+    "certifi==2025.11.12"
 ]
 

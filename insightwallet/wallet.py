@@ -1,7 +1,11 @@
 
+import asyncio
+import subprocess
+import json
 from toga import App, Box, Label, Button, Divider
 from toga.style.pack import Pack
 from toga.constants import COLUMN, ROW, CENTER, Direction, BOLD, NORMAL
+from toga.platform import current_platform
 
 from .coin import Coin
 
@@ -205,29 +209,74 @@ class Wallet(Box):
         )
 
 
+    def insert_coin(self, coin, address, wif):
+        self.app.vault.add_coin(self.app.account, self.app.password, coin, address, wif)
+        coin_button = Button(
+            text=coin,
+            style=Pack(
+                font_size=12,
+                width=100
+            ),
+            on_press=lambda widget, coin=coin: self.manage_coin(coin, widget)
+        )
+        self.coins_list.add(coin_button)
+        self.restore_coins_list()
+        self._is_generating = None
+
+
     def confirm_add_coin(self, coin):
         if self._is_generating:
             return
         self._is_generating = True
+        if current_platform == "darwin":
+            self.app.loop.create_task(self.generate_address(coin))
+            return
         hdwallet = self.app.utils.generate_address(coin)
         if hdwallet:
             address = hdwallet.address()
             wif = hdwallet.wif()
-            self.app.vault.add_coin(self.app.account, self.app.password, coin, address, wif)
-            coin_button = Button(
-                text=coin,
-                style=Pack(
-                    font_size=12,
-                    width=100
-                ),
-                on_press=lambda widget, coin=coin: self.manage_coin(coin, widget)
+            self.insert_coin(coin, address, wif)
+
+
+    async def generate_address(self, coin):
+        coin_info = self.app.utils.get_coin(coin)
+        network = coin_info["network"]
+        mktx = str(self.app.utils.get_tool())
+        cmd = [mktx, "--network", network, "--gen-address"]
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                creationflags=0
             )
-            self.coins_list.add(coin_button)
-            self.restore_coins_list()
-        self._is_generating = None
+            stdout, stderr = await process.communicate()
+            if process.returncode != 0:
+                self.app.main_window.error_dialog(
+                    "Error", f"Failed to generate address: {stderr.decode()}"
+                )
+                return
+            raw = stdout.decode().strip()
+            try:
+                data = json.loads(raw)
+                address = data["address"]
+                wif = data["wif"]
+                self.insert_coin(coin, address, wif)
+            except json.JSONDecodeError as e:
+                self.app.main_window.error_dialog(
+                    "Error",
+                    f"Invalid JSON from address generator:\n{raw}"
+                )
+                return None
+        except Exception as e:
+            self.app.main_window.error_dialog(
+                "Error", f"Failed to generate address: {e}"
+            )
 
 
     def manage_coin(self, coin, button):
+        if self.app.coin == coin:
+            return
         if self.coin_view:
             self.coin_view.toggle = None
         self.app.loop.create_task(self.update_buttons(button))
