@@ -134,6 +134,14 @@ class Wallet(Box):
                 align_items=CENTER
             )
         )
+        if current_platform == "linux":
+            self.toolbar_box = Box(
+                style=Pack(
+                    direction = ROW,
+                    height = 24
+                )
+            )
+            self.add(self.toolbar_box)
 
         self.add(
             self.account_panel,
@@ -157,26 +165,55 @@ class Wallet(Box):
         self.insert_toolbar()
 
     def insert_toolbar(self):
-        about_cmd = Command(
-            group=Group.HELP,
-            text="About",
-            action=self.show_about
-        )
-        visit_cmd = Command(
-            group=Group.HELP,
-            text="Github",
-            action=self.visit_page
-        )
-        donate_cmd = Command(
-            group=Group.HELP,
-            text="Donate",
-            action=self.donate
-        )
-        self.app.commands.add(
-            donate_cmd,
-            visit_cmd,
-            about_cmd
-        )
+        if current_platform == "linux":
+            from gi.repository import Gtk
+            toolbar = Gtk.MenuBar()
+            self.toolbar_box._impl.native.add(toolbar)
+
+            help_group = Gtk.MenuItem()
+            help_group.set_label("Help")
+
+            submenu = Gtk.Menu()
+
+            about_cmd = Gtk.MenuItem()
+            about_cmd.set_label("About")
+            about_cmd.connect("activate", self.show_about)
+            github_cmd = Gtk.MenuItem()
+            github_cmd.set_label("Github")
+            github_cmd.connect("activate", self.visit_page)
+            donate_cmd = Gtk.MenuItem()
+            donate_cmd.set_label("Donate")
+            donate_cmd.connect("activate", self.donate)
+
+            submenu.append(about_cmd)
+            submenu.append(github_cmd)
+            submenu.append(donate_cmd)
+            submenu.show_all()
+
+            help_group.set_submenu(submenu)
+            toolbar.append(help_group)
+            toolbar.show_all()
+        else:
+            about_cmd = Command(
+                group=Group.HELP,
+                text="About",
+                action=self.show_about
+            )
+            visit_cmd = Command(
+                group=Group.HELP,
+                text="Github",
+                action=self.visit_page
+            )
+            donate_cmd = Command(
+                group=Group.HELP,
+                text="Donate",
+                action=self.donate
+            )
+            self.app.commands.add(
+                donate_cmd,
+                visit_cmd,
+                about_cmd
+            )
         self.show_coins_list()
 
 
