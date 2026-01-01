@@ -2,48 +2,56 @@
     "BTCZ" : {
         "name": "BitcoinZ",
         "network": "bitcoinz",
-        "api": "https://explorer.btcz.rocks/api"
+        "api": "https://explorer.btcz.rocks/api",
+        "donation_address": "t1dVqT9r1QkPNpYYaUfFd2g9PMM9EchRCMZ"
     },
 
     "ZEC" : {
         "name": "Zcash",
         "network": "zcash",
-        "api": "https://zecblockexplorer.com/api/v2"
+        "api": "https://zecblockexplorer.com/api/v2",
+        "donation_address": "t1LJaatStsJdWSdrXdQrjaDnjExhG9yu41V"
     },
 
     "LTZ" : {
         "name": "LitecoinZ",
         "network": "litecoinz",
-        "api": "https://insight.litecoinz.org/api"
+        "api": "https://insight.litecoinz.org/api",
+        "donation_address": "L1F4cjGgLRgbLGa2Y8yDTDLYvdqDB91vMbj"
     },
 
     "ZERC" : {
         "name": "ZeroClassic",
         "network": "zeroclassic",
-        "api": "https://insight.zeroclassic.org/api"
+        "api": "https://insight.zeroclassic.org/api",
+        "donation_address": "t1SG4fmUfef39Zu2a8KheLXnz7pvef59WCB"
     },
 
     "ZER" : {
         "name": "Zero",
         "network": "zero",
-        "api": "https://explorer.zer.zelcore.io/api"
+        "api": "https://explorer.zer.zelcore.io/api",
+        "donation_address": "t1cB7mvaB24RF5jk4uRTa7sCaLpF9DSuHAg"
     },
 
     "ZCL" : {
         "name": "Zclassic",
         "network": "zclassic",
-        "api": "https://explorer.zcl.zelcore.io/api"
+        "api": "https://explorer.zcl.zelcore.io/api",
+        "donation_address": "t1dPEapvRauKh3v777XUZyGpv7ZcEuidy9D"
     },
 
     "GLINK" : {
         "name": "Gemlink",
         "network": "gemlink",
-        "api": "https://explorer.gemlink.org/api"
+        "api": "https://explorer.gemlink.org/api",
+        "donation_address": "s1XtMsBnkAfqXBGd4ZSiexm2btrWUmwMaPs"
     },
 
     "YEC" : {
         "name": "Ycash",
         "network": "ycash",
-        "api": "https://yecblockexplorer.com/api/v2"
+        "api": "https://yecblockexplorer.com/api/v2",
+        "donation_address": "s1iRVFkHDaaByv9cEaFeDqjrUQ3Pr1sMHh7"
     }
 }

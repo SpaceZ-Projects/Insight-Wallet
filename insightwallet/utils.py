@@ -12,6 +12,7 @@ from hdwallet.mnemonics import BIP39_MNEMONIC_LANGUAGES
 from hdwallet.entropies import BIP39Entropy, BIP39_ENTROPY_STRENGTHS
 from hdwallet.derivations import CustomDerivation
 from hdwallet.consts import PUBLIC_KEY_TYPES
+from hdwallet.exceptions import WIFError
 
 import io
 import qrcode
@@ -144,6 +145,12 @@ class Utils:
         coins = self.load_coins_config()
         return coins.get(coin)
     
+    def get_donation_address(self, coin: str) -> str | None:
+        coin_data = self.get_coin(coin)
+        if coin_data:
+            return coin_data.get("donation_address")
+        return None
+    
 
     async def fetch_tool(self, setup, label, progress_bar):
         platfom = current_platform
@@ -229,43 +236,47 @@ class Utils:
     
 
     def generate_address(self, coin):
-        if coin == "BTCZ":
-            from hdwallet.cryptocurrencies import BitcoinZ as Crypto
-            derivation = "m/44'/177'/0'/0/0"
-        elif coin == "LTZ":
-            from hdwallet.cryptocurrencies import LitecoinZ as Crypto
-            derivation = "m/44'/221'/0'/0/0"
-        elif coin == "ZCL":
-            from hdwallet.cryptocurrencies import ZClassic as Crypto
-            derivation = "m/44'/147'/0'/0/0"
-        elif coin == "ZER":
-            from hdwallet.cryptocurrencies import Zero as Crypto
-            derivation = "m/44'/323'/0'/0/0"
-        elif coin == "GLINK":
-            from hdwallet.cryptocurrencies import Gemlink as Crypto
-            derivation = "m/44'/410'/0'/0/0"
-        elif coin == "YEC":
-            from hdwallet.cryptocurrencies import Ycash as Crypto
-            derivation = "m/44'/347'/0'/0/0"
-        else:
-            from hdwallet.cryptocurrencies import Zcash as Crypto
-            derivation = "m/44'/133'/0'/0/0"
-        hdwallet = HDWallet(
-            cryptocurrency=Crypto,
-            hd=BIP32HD,
-            network=Crypto.NETWORKS.MAINNET,
-            language=BIP39_MNEMONIC_LANGUAGES.ENGLISH,
-            public_key_type=PUBLIC_KEY_TYPES.COMPRESSED,
-            passphrase=""
-        ).from_entropy(
-            entropy=BIP39Entropy(entropy=BIP39Entropy.generate(
-                strength=BIP39_ENTROPY_STRENGTHS.TWO_HUNDRED_FIFTY_SIX
-            ))
-        ).from_derivation(
-            derivation=CustomDerivation(
-                path=derivation
+        try:
+            if coin == "BTCZ":
+                from hdwallet.cryptocurrencies import BitcoinZ as Crypto
+                derivation = "m/44'/177'/0'/0/0"
+            elif coin == "LTZ":
+                from hdwallet.cryptocurrencies import LitecoinZ as Crypto
+                derivation = "m/44'/221'/0'/0/0"
+            elif coin == "ZCL":
+                from hdwallet.cryptocurrencies import ZClassic as Crypto
+                derivation = "m/44'/147'/0'/0/0"
+            elif coin == "ZER":
+                from hdwallet.cryptocurrencies import Zero as Crypto
+                derivation = "m/44'/323'/0'/0/0"
+            elif coin == "GLINK":
+                from hdwallet.cryptocurrencies import Gemlink as Crypto
+                derivation = "m/44'/410'/0'/0/0"
+            elif coin == "YEC":
+                from hdwallet.cryptocurrencies import Ycash as Crypto
+                derivation = "m/44'/347'/0'/0/0"
+            else:
+                from hdwallet.cryptocurrencies import Zcash as Crypto
+                derivation = "m/44'/133'/0'/0/0"
+            hdwallet = HDWallet(
+                cryptocurrency=Crypto,
+                hd=BIP32HD,
+                network=Crypto.NETWORKS.MAINNET,
+                language=BIP39_MNEMONIC_LANGUAGES.ENGLISH,
+                public_key_type=PUBLIC_KEY_TYPES.COMPRESSED,
+                passphrase=""
+            ).from_entropy(
+                entropy=BIP39Entropy(entropy=BIP39Entropy.generate(
+                    strength=BIP39_ENTROPY_STRENGTHS.TWO_HUNDRED_FIFTY_SIX
+                ))
+            ).from_derivation(
+                derivation=CustomDerivation(
+                    path=derivation
+                )
             )
-        )
-        return hdwallet
-
-
+            return {
+                "address": hdwallet.address(),
+                "wif": hdwallet.wif()
+            }
+        except Exception:
+            return None

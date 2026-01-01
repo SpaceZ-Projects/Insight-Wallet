@@ -2,7 +2,7 @@
 import asyncio
 import subprocess
 import json
-from toga import App, Box, Label, Button, Divider
+from toga import App, Box, Label, Button, Divider, Command, Group
 from toga.style.pack import Pack
 from toga.constants import COLUMN, ROW, CENTER, Direction, BOLD, NORMAL
 from toga.platform import current_platform
@@ -154,7 +154,31 @@ class Wallet(Box):
             self.add_button
         )
 
+        self.insert_toolbar()
+
+    def insert_toolbar(self):
+        about_cmd = Command(
+            group=Group.HELP,
+            text="About",
+            action=self.show_about
+        )
+        visit_cmd = Command(
+            group=Group.HELP,
+            text="Github",
+            action=self.visit_page
+        )
+        donate_cmd = Command(
+            group=Group.HELP,
+            text="Donate",
+            action=self.donate
+        )
+        self.app.commands.add(
+            donate_cmd,
+            visit_cmd,
+            about_cmd
+        )
         self.show_coins_list()
+
 
     def show_coins_list(self):
         wallet = self.app.vault.list_coins(self.app.account, self.app.password)
@@ -233,13 +257,17 @@ class Wallet(Box):
             return
         self._is_generating = True
         if current_platform == "darwin":
-            self.app.loop.create_task(self.generate_address(coin))
+            hdwallet = self.generate_address(coin)
+        else:
+            hdwallet = self.app.utils.generate_address(coin)
+        if not hdwallet:
+            self.app.main_window.error_dialog(
+                "Error", "Failed to generate address"
+            )
             return
-        hdwallet = self.app.utils.generate_address(coin)
-        if hdwallet:
-            address = hdwallet.address()
-            wif = hdwallet.wif()
-            self.insert_coin(coin, address, wif)
+        address = hdwallet["address"]
+        wif = hdwallet["wif"]
+        self.insert_coin(coin, address, wif)
 
 
     async def generate_address(self, coin):
@@ -259,13 +287,14 @@ class Wallet(Box):
                 self.app.main_window.error_dialog(
                     "Error", f"Failed to generate address: {stderr.decode()}"
                 )
-                return
+                return None
             raw = stdout.decode().strip()
             try:
                 data = json.loads(raw)
-                address = data["address"]
-                wif = data["wif"]
-                self.insert_coin(coin, address, wif)
+                return {
+                    "address": data["address"],
+                    "wif": data["wif"]
+                }
             except json.JSONDecodeError as e:
                 self.app.main_window.error_dialog(
                     "Error",
@@ -276,6 +305,7 @@ class Wallet(Box):
             self.app.main_window.error_dialog(
                 "Error", f"Failed to generate address: {e}"
             )
+            return None
 
 
     def manage_coin(self, coin, button):
@@ -298,3 +328,21 @@ class Wallet(Box):
             widget.style.font_weight = NORMAL
         button.style.width = 120
         button.style.font_weight = BOLD
+
+
+    def show_about(self, cmd):
+        self.app.about()
+
+    def visit_page(self, cmd):
+        import webbrowser
+        webbrowser.open(self.app.home_page)
+
+    def donate(self, cmd):
+        if not self.app.coin:
+            return
+        donation = self.app.utils.get_donation_address(self.app.coin)
+        if donation:
+            if self.coin_view:
+                self.coin_view.coin_container.current_tab = self.coin_view.send_option
+                self.coin_view.destination_input.value = donation
+                self.coin_view.amount_input.focus()

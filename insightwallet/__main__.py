@@ -1,5 +1,5 @@
 
-from toga import App, Window
+from toga import App, MainWindow
 from toga.platform import current_platform
 
 from . import Utils, Setup, InsightAPI, Vault
@@ -8,6 +8,7 @@ from . import Utils, Setup, InsightAPI, Vault
 class InsightWallet(App):
     
     def set_window_params(self):
+        self.commands.clear()
         platform = current_platform
         if platform == "windows":
             import System.Drawing as Drawing
@@ -37,7 +38,7 @@ class InsightWallet(App):
         self.vault = Vault(self)
         self.api = InsightAPI(self)
         self.setup = Setup(self)
-        self.main_window = Window(
+        self.main_window = MainWindow(
             title=f"{self.formal_name} v{self.version}"
         )
         self.set_window_params()
