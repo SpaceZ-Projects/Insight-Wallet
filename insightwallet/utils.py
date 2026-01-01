@@ -21,9 +21,9 @@ from toga.images import Image
 
 #https://github.com/ezzygarmyz/bitgo-utxo-lib-z
 TOOL_SHA256 = {
-    "windows": "22f837f2413b55e463c7ad0085fbe0da3e9805474d22513db5185e620c959b39",
-    "linux":   "8cc416cbee0c268cde0fc65dbc86bdd9859b540ae15ba4a48f7fb22be75797c7",
-    "darwin":  "bb2e84da2c4abde19694682c62dab3ebb9da03fdfbc7201f48ae1016ed6f9913",
+    "windows": "7e25be20df9e532461c4f287785f52db721419b745f6c48991b82a297163be00",
+    "linux":   "1079b597b15713d19a3337f4a635263f1cfb00fbbfb2f1ae4014ad77ab0fea96",
+    "darwin":  "fbda80fc23ffeeb8c4dad8908d1dadcb0711c5b183888b5fa4fbedcb5ae55134",
 }
 
 class Utils:
@@ -160,7 +160,7 @@ class Utils:
             file_name = "wallet-cli"
         elif platfom == "darwin":
             file_name = "walletmac-cli"
-        url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.0.0/"
+        url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.1.0/"
         destination = self.app.paths.data / file_name
         self.progress = 0
         try:
@@ -280,3 +280,34 @@ class Utils:
             }
         except Exception:
             return None
+    
+
+    def address_from_wif(self, coin: str, wif: str):
+        try:
+            if coin == "BTCZ":
+                from hdwallet.cryptocurrencies import BitcoinZ as Crypto
+            elif coin == "LTZ":
+                from hdwallet.cryptocurrencies import LitecoinZ as Crypto
+            elif coin == "ZCL":
+                from hdwallet.cryptocurrencies import ZClassic as Crypto
+            elif coin == "ZER":
+                from hdwallet.cryptocurrencies import Zero as Crypto
+            elif coin == "GLINK":
+                from hdwallet.cryptocurrencies import Gemlink as Crypto
+            elif coin == "YEC":
+                from hdwallet.cryptocurrencies import Ycash as Crypto
+            else:
+                from hdwallet.cryptocurrencies import Zcash as Crypto
+
+            hdwallet = HDWallet(
+                cryptocurrency=Crypto,
+                hd=None,
+                network=Crypto.NETWORKS.MAINNET,
+                public_key_type=PUBLIC_KEY_TYPES.COMPRESSED
+            ).from_wif(wif=wif)
+            return hdwallet.address()
+        except WIFError:
+            return None
+
+
+

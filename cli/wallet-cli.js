@@ -14,9 +14,10 @@ const showHelpFlag =
     args.includes('--help') || args.includes('-h');
 
 const generateAddress = process.argv.includes('--gen-address');
+const addressFromWif = process.argv.includes('--address-from-wif');
 const compressed = !process.argv.includes('--uncompressed');
 
-const networkName = (getArg('--network') || 'bitcoinz').toLowerCase();
+const networkName = getArg('--network')?.toLowerCase();
 const senderWif = getArg('--wif');
 const recipientAddress = getArg('--to');
 const amountToSend = parseInt(getArg('--amount'), 10);
@@ -40,15 +41,20 @@ const network = NETWORKS[networkName];
 
 function showHelp() {
     console.log(`
-        
+Transaction & Address Tool
+====================================
+
 USAGE
 -----
 
 Generate a new transparent (P2PKH) address:
-  mktx --network <network> --gen-address [--uncompressed]
+  wallet-cli --network <network> --gen-address [--uncompressed]
+
+Derive address from WIF:
+  wallet-cli --network <network> --address-from-wif --wif <private-key-wif>
 
 Build and sign a transaction:
-  mktx --network <network> \\
+  wallet-cli --network <network> \\
     --wif <private-key-wif> \\
     --to <recipient-address> \\
     --amount <satoshis> \\
@@ -61,6 +67,7 @@ OPTIONS
 
 --network <name>        Network to use (default: bitcoinz)
 --gen-address           Generate a new address
+--address-from-wif      Derive address from WIF
 --uncompressed          Generate uncompressed public key
 
 --wif <wif>             Sender private key (WIF)
@@ -122,6 +129,34 @@ if (generateAddress) {
         process.exit(1);
     }
 }
+
+
+if (addressFromWif) {
+    try {
+        if (!senderWif) {
+            console.error('Missing --wif argument');
+            process.exit(1);
+        }
+
+        const keyPair = bitgoLib.ECPair.fromWIF(senderWif, network);
+
+        const pubKey = keyPair.getPublicKeyBuffer();
+        const pubKeyHash = bitgoLib.crypto.hash160(pubKey);
+
+        const address = bitgoLib.address.toBase58Check(
+            pubKeyHash,
+            network.pubKeyHash
+        );
+        console.log(address);
+
+        process.exit(0);
+
+    } catch (err) {
+        console.error('Failed to derive address from WIF:', err.message);
+        process.exit(1);
+    }
+}
+
 
 if (!senderWif || !recipientAddress || !amountToSend || (!utxoDataString && !utxoFilePath)) {
     console.error('Missing required arguments.');

@@ -4,7 +4,7 @@ import subprocess
 from datetime import datetime, timezone
 import json
 
-from toga import App, Box, ImageView, Button, Label, Table, TextInput, OptionContainer, OptionItem, Divider, ProgressBar
+from toga import App, Box, ImageView, Button, Label, Table, TextInput, OptionContainer, OptionItem, Divider, ProgressBar, PasswordInput
 from toga.constants import COLUMN, ROW, CENTER, BOLD, ITALIC, Direction, END
 from toga.style.pack import Pack
 from toga.colors import RED, GRAY, GREEN
@@ -26,6 +26,7 @@ class Coin(Box):
 
         coin_info = self.app.utils.get_coin(self.app.coin)
         self.name = coin_info["name"]
+        self.network = coin_info["network"]
         self.app.api.base_url = coin_info["api"].rstrip("/")
 
         self.transactions_data = []
@@ -182,7 +183,8 @@ class Coin(Box):
             style=Pack(
                 font_size=12,
                 text_align=CENTER,
-                margin_right=10
+                margin_right=10,
+                margin_top=10
             )
         )
 
@@ -190,7 +192,8 @@ class Coin(Box):
             placeholder=" enter address",
             style=Pack(
                 font_size=12,
-                width=500
+                width=500,
+                margin_top=10
             )
         )
 
@@ -301,6 +304,107 @@ class Coin(Box):
             content=self.send_page
         )
 
+        self.key_label = Label(
+            text="Key (WIF) :",
+            style=Pack(
+                font_size=12,
+                text_align=CENTER,
+                margin_right=10,
+                margin_top=10
+            )
+        )
+
+        self.key_input = PasswordInput(
+            placeholder=" enter wif key",
+            style=Pack(
+                font_size=12,
+                width=500,
+                margin_top=10
+            )
+        )
+
+        self.key_box = Box(
+            style=Pack(
+                direction=ROW,
+                align_items=CENTER,
+                margin=10
+            )
+        )
+
+        self.redeem_address = Label(
+            text="",
+            style=Pack(
+                color=GREEN,
+                font_size=11,
+                font_weight=BOLD,
+                text_align=CENTER,
+                margin_right=10,
+                margin_top=10
+            )
+        )
+
+        self.redeem_balance = Label(
+            text="",
+            style=Pack(
+                font_size=10,
+                font_weight=BOLD,
+                text_align=CENTER,
+                margin_right=10,
+                margin_top=10
+            )
+        )
+
+        self.redeem_box = Box(
+            style=Pack(
+                direction=ROW,
+                align_items=CENTER,
+                margin=10
+            )
+        )
+
+        self.redeem_button = Button(
+            text="Verify",
+            style=Pack(
+                width=120,
+                font_size=12,
+                font_weight=BOLD,
+                margin_left=115,
+                margin_bottom=20
+            ),
+            on_press=self.verify_redeem_key
+        )
+
+        self.reset_button = Button(
+            text="⟳",
+            style=Pack(
+                font_size=12,
+                font_weight=BOLD,
+                margin_left=10,
+                margin_bottom=20
+            ),
+            on_press=self.reset_redeem_page
+        )
+
+        self.redeem_buttons = Box(
+            style=Pack(
+                direction=ROW,
+                flex=1,
+                align_items=END
+            )
+        )
+
+        self.redeem_page = Box(
+            style=Pack(
+                direction=COLUMN,
+                flex=1
+            )
+        )
+
+        self.redeem_option = OptionItem(
+            text=" Redeem ",
+            content=self.redeem_page
+        )
+
         self.coin_container = OptionContainer(
             style=Pack(
                 font_size=12,
@@ -314,7 +418,8 @@ class Coin(Box):
             content= [
                 self.transaction_option,
                 self.receive_option,
-                self.send_option
+                self.send_option,
+                self.redeem_option
             ]
         )
 
@@ -364,6 +469,19 @@ class Coin(Box):
         self.fee_box.add(
             self.fee_label,
             self.fee_input
+        )
+
+        self.redeem_page.add(
+            self.key_box,
+            self.redeem_box,
+            self.redeem_buttons
+        )
+        self.key_box.add(
+            self.key_label,
+            self.key_input
+        )
+        self.redeem_buttons.add(
+            self.redeem_button
         )
 
         self.set_table_context_menu()
@@ -423,7 +541,6 @@ class Coin(Box):
             webbrowser.open(full_url)
 
 
-    
     async def load_transactions(self):
         self.fee_input.value = "0.00001000"
         transactions = self.app.vault.get_transactions(self.app.account, self.app.password, self.app.coin)
@@ -602,65 +719,9 @@ class Coin(Box):
         self.send_button.enabled = True
 
 
-    async def verify_inputs(self, button):
-        destination = self.destination_input.value.strip()
-        try:
-            amount_sat = int(round(float(self.amount_input.value) * 100_000_000))
-            fee_sat = int(round(float(self.fee_input.value) * 100_000_000))
-        except (TypeError, ValueError):
-            self.app.main_window.error_dialog(
-                "Error", "Invalid amount or fee"
-            )
-            return
-        if amount_sat <= 0 or fee_sat <= 0:
-            self.app.main_window.error_dialog(
-                "Error", "Amount and fee must be greater than zero"
-            )
-            return
-        addr_info = await self.app.api.get_address(destination)
-        if not addr_info:
-            self.app.main_window.error_dialog(
-                "Error", "Invalid destination address"
-            )
-            return
-        utxos = await self.app.api.get_utxos(self.address)
-        if not utxos:
-            self.app.main_window.error_dialog(
-                "Error", "No UTXOs available"
-            )
-            return
-        utxos.sort(key=lambda u: u.get("confirmations", 0), reverse=True)
-        total_input = 0
-        inputs_to_use = []
-        for u in utxos:
-            if u.get("confirmations", 0) <= 0:
-                continue
-            value_sat = int(round(float(u["amount"]) * 100_000_000))
-            inputs_to_use.append(u)
-            total_input += value_sat
-            if total_input >= amount_sat + fee_sat:
-                break
-        if total_input < amount_sat + fee_sat:
-            self.app.main_window.error_dialog(
-                "Error", f"Not enough {self.app.coin} for amount + fee"
-            )
-            return
-        self.disable_send()
-        await self.send_transaction(inputs_to_use, destination, amount_sat, fee_sat)
-
-
-    async def send_transaction(self, inputs_to_use, destination, amount_sat, fee_sat):
-        wif = self.app.vault.get_coin_wif(
-            self.app.account,
-            self.app.password,
-            self.app.coin
-        )
+    async def build_transaction(self, wif, inputs_to_use, destination, amount_sat, fee_sat):
         if not wif:
-            self.app.main_window.error_dialog(
-                "Error", "Failed to unlock private key"
-            )
-            self.enable_send()
-            return
+            return None, "Failed to unlock private key"
         self.send_progress.value = 10
         network = self.name.lower()
         wallet_cli = str(self.app.utils.get_tool())
@@ -693,41 +754,244 @@ class Coin(Box):
             )
             stdout, stderr = await process.communicate()
             if process.returncode != 0:
-                self.app.main_window.error_dialog(
-                    "Transaction error",
-                    stderr.decode().strip() or "Transaction build failed"
-                )
-                self.enable_send()
-                return
+                return None, stderr.decode().strip() or "Transaction build failed"
             raw_tx_hex = stdout.decode().strip()
             if not raw_tx_hex or len(raw_tx_hex) < 20:
-                self.app.main_window.error_dialog(
-                    "Error", "Invalid raw transaction returned"
-                )
-                self.enable_send()
-                return
+                return None, "Invalid raw transaction returned"
             self.send_progress.value = 50
-            success, error = await self.app.api.broadcast_tx(raw_tx_hex)
-            if success:
-                async def on_result(widget, result):
-                    self.destination_input.value = ""
-                    self.amount_input.value = ""
-                    self.fee_input.value = "0.00001000"
-                    self.enable_send()
-                    await self.fetch_transactions()
-                self.send_progress.value = 100
-                self.app.main_window.info_dialog(
-                    "Success", "Transaction broadcast successfully",
-                    on_result=on_result
-                )
-            else:
-                self.app.main_window.error_dialog(
-                    "Broadcast failed", error or "Unknown error"
-                )
-                self.enable_send()
+            return raw_tx_hex, None
         except Exception as e:
+            return None, f"Transaction build error: {e}"
+
+
+    async def verify_inputs(self, button):
+        destination = self.destination_input.value.strip()
+        if not destination:
             self.app.main_window.error_dialog(
-                "Error", f"Transaction build error: {e}"
+                "Error", "Destination address is required"
+            )
+            self.destination_input.focus()
+            return
+        try:
+            amount_sat = int(round(float(self.amount_input.value) * 100_000_000))
+            fee_sat = int(round(float(self.fee_input.value) * 100_000_000))
+        except (TypeError, ValueError):
+            self.app.main_window.error_dialog(
+                "Error", "Invalid amount or fee"
+            )
+            return
+        if amount_sat <= 0 or fee_sat <= 0:
+            self.app.main_window.error_dialog(
+                "Error", "Amount and fee must be greater than zero"
+            )
+            return
+        self.disable_send()
+        addr_info = await self.app.api.get_address(destination)
+        if not addr_info:
+            self.app.main_window.error_dialog(
+                "Error", "Invalid destination address"
             )
             self.enable_send()
+            return
+        utxos = await self.app.api.get_utxos(self.address)
+        if not utxos:
+            self.app.main_window.error_dialog(
+                "Error", "No UTXOs available"
+            )
+            self.enable_send()
+            return
+        utxos.sort(key=lambda u: u.get("confirmations", 0), reverse=True)
+        total_input = 0
+        inputs_to_use = []
+        for u in utxos:
+            if u.get("confirmations", 0) <= 0:
+                continue
+            value_sat = int(round(float(u["amount"]) * 100_000_000))
+            inputs_to_use.append(u)
+            total_input += value_sat
+            if total_input >= amount_sat + fee_sat:
+                break
+        if total_input < amount_sat + fee_sat:
+            self.app.main_window.error_dialog(
+                "Error", f"Not enough {self.app.coin} for amount + fee"
+            )
+            self.enable_send()
+            return
+        wif = self.app.vault.get_coin_wif(
+            self.app.account,
+            self.app.password,
+            self.app.coin
+        )
+        raw_tx_hex, error = await self.build_transaction(wif, inputs_to_use, destination, amount_sat, fee_sat)
+        if error:
+            self.app.main_window.error_dialog(
+                "Error", error
+            )
+            self.enable_send()
+            return
+        success, error = await self.app.api.broadcast_tx(raw_tx_hex)
+        if success:
+            async def on_result(widget, result):
+                self.destination_input.value = ""
+                self.amount_input.value = ""
+                self.fee_input.value = "0.00001000"
+                self.enable_send()
+                await self.fetch_transactions()
+            self.send_progress.value = 100
+            self.app.main_window.info_dialog(
+                "Success", "Transaction broadcast successfully",
+                on_result=on_result
+            )
+        else:
+            self.app.main_window.error_dialog(
+                "Broadcast failed", error or "Unknown error"
+            )
+            self.enable_send()
+        
+
+    def disable_redeem(self):
+        self.redeem_button.enabled = False
+        self.redeem_buttons.remove(self.reset_button)
+        self.redeem_buttons.add(self.send_progress)
+        self.send_progress.value = 5
+        self.redeem_button.text = "Sending..."
+
+    def enable_redeem(self):
+        self.redeem_button.enabled = True
+        self.redeem_buttons.remove(self.send_progress)
+        self.redeem_buttons.add(self.reset_button)
+        self.redeem_button.text = "Redeem"
+
+
+    async def verify_redeem_key(self, button):
+        wif = self.key_input.value.strip()
+        if not wif:
+            self.app.main_window.error_dialog(
+                "Error", "Key is required"
+            )
+            self.key_input.focus()
+            return
+        if current_platform == "darwin":
+            address = await self.address_from_wif(wif)
+        else:
+            address = self.app.utils.address_from_wif(self.app.coin, wif)
+        if not address:
+            self.app.main_window.error_dialog(
+                "Error", "Invalid wallet import format (WIF)"
+            )
+            return
+        self.key_input.readonly = True
+        self.redeem_box.add(
+            self.redeem_address,
+            self.redeem_balance
+        )
+        self.redeem_buttons.add(self.reset_button)
+        self.redeem_address.text = address
+        await self.get_redeem_balance(address, wif)
+
+
+    async def address_from_wif(self, wif):
+        wallet_cli = str(self.app.utils.get_tool())
+        cmd = [wallet_cli, "--network", self.network, "--address-from-wif", "--wif", wif]
+        try:
+            creationflags = subprocess.CREATE_NO_WINDOW if current_platform == "windows" else 0
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                creationflags=creationflags
+            )
+            stdout, stderr = await process.communicate()
+            if process.returncode != 0:
+                self.app.main_window.error_dialog(
+                    "Error", stderr.decode().strip()
+                )
+                return None
+            address = stdout.decode().strip()
+            return address
+        except Exception as e:
+            self.app.main_window.error_dialog(
+                "Error", e
+            )
+
+
+    async def get_redeem_balance(self, address, wif):
+        addr_info = await self.app.api.get_address(address)
+        if addr_info:
+            confirmed = self.app.utils.format_balance(addr_info.get("balance", 0))
+            unconfirmed = self.app.utils.format_balance(addr_info.get("unconfirmedBalance", 0))
+            self.redeem_balance.text = f"Bal. :{confirmed} | Unconf. :{unconfirmed}"
+            if float(confirmed) > 0:
+                self.redeem_button.text = "Redeem"
+                self.redeem_button.on_press = lambda widget, address=address, wif=wif: self.on_redeem_balance(address, wif)
+
+
+    def on_redeem_balance(self, address, wif):
+        self.disable_redeem()
+        destination = self.app.vault.get_coin_address(self.app.account, self.app.password, self.app.coin)
+        self.app.loop.create_task(self.collet_redeem_utxos(destination, address, wif))
+        
+
+    async def collet_redeem_utxos(self, destination, address, wif):
+        utxos = await self.app.api.get_utxos(address)
+        if not utxos:
+            self.app.main_window.error_dialog(
+                "Error", "No UTXOs available"
+            )
+            self.enable_redeem()
+            return
+        utxos.sort(key=lambda u: u.get("confirmations", 0), reverse=True)
+        total_input = 0
+        inputs_to_use = []
+        for u in utxos:
+            if u.get("confirmations", 0) <= 0:
+                continue
+            value_sat = int(round(float(u["amount"]) * 100_000_000))
+            inputs_to_use.append(u)
+            total_input += value_sat
+        fee_sat = 1_000
+        if total_input <= fee_sat:
+            self.app.main_window.error_dialog(
+                "Error", "Insufficient balance to cover transaction fee"
+            )
+            self.enable_redeem()
+            return
+        amount_sat = total_input - fee_sat
+        raw_tx_hex, error = await self.build_transaction(wif, inputs_to_use, destination, amount_sat, fee_sat)
+        if error:
+            self.app.main_window.error_dialog(
+                "Error", error
+            )
+            self.enable_redeem()
+            return
+        success, error = await self.app.api.broadcast_tx(raw_tx_hex)
+        if success:
+            async def on_result(widget, result):
+                self.redeem_buttons.remove(self.send_progress)
+                self.clear_redeem_page()
+                await self.fetch_transactions()
+            self.send_progress.value = 100
+            self.app.main_window.info_dialog(
+                "Success", "Transaction broadcast successfully",
+                on_result=on_result
+            )
+        else:
+            self.app.main_window.error_dialog(
+                "Broadcast failed", error or "Unknown error"
+            )
+            self.enable_redeem()
+
+
+    def clear_redeem_page(self):
+        self.redeem_box.clear()
+        self.key_input.value = ""
+        self.key_input.readonly = False
+        self.redeem_button.text = "Verify"
+        self.redeem_button.on_press = self.verify_redeem_key
+        self.redeem_button.enabled = True
+
+
+    def reset_redeem_page(self, button):
+        self.redeem_buttons.remove(button)
+        self.clear_redeem_page()
 
