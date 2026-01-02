@@ -104,9 +104,19 @@ jobs:
           }
           & $makensis insightwallet.nsi
 
-      - name: Upload App
+      - name: Upload App (Linux / macOS)
+        if: matrix.target != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: InsightWallet-${{ matrix.target }}
           path: dist
+          if-no-files-found: warn
+
+      - name: Upload App (Windows)
+        if: matrix.target == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: InsightWallet-Windows
+          path: |
+            build/*.exe
           if-no-files-found: warn

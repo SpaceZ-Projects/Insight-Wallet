@@ -19,7 +19,7 @@
 
   ;Name and file
   Name "${PRODUCT_NAME}"
-  OutFile "dist/${PRODUCT_NAME}-${PRODUCT_VERSION}-setup-${BUILD_ARCH}.exe"
+  OutFile "build/${PRODUCT_NAME}-${PRODUCT_VERSION}-setup-${BUILD_ARCH}.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
