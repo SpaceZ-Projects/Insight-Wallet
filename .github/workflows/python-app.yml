@@ -30,7 +30,8 @@ jobs:
               sudo apt-get update --fix-missing
               sudo apt-get install -y \
                 socat libcairo2-dev libgirepository1.0-dev gir1.2-gtk-3.0 \
-                libcanberra-gtk3-module build-essential git uuid-dev libblkid-dev libmount-dev
+                libcanberra-gtk3-module build-essential git uuid-dev \
+                libblkid-dev libmount-dev
             briefcase-run-prefix: "xvfb-run"
             briefcase-args: "--target ubuntu"
 
@@ -67,9 +68,10 @@ jobs:
             ${{ matrix.output-format }} \
             ${{ matrix.briefcase-args }}
 
-      - name: Package App
+      - name: Package App (Linux / macOS)
+        if: matrix.target != 'Windows'
         run: |
-          if [ "${{ matrix.target }}" == "macOS" ]; then
+          if [ "${{ matrix.target }}" = "macOS" ]; then
             briefcase package macOS app \
               --update \
               --no-input \
@@ -85,6 +87,22 @@ jobs:
               --log \
               ${{ matrix.briefcase-args }}
           fi
+
+      - name: Install NSIS (Windows)
+        if: matrix.target == 'Windows'
+        run: |
+          choco install nsis --version=3.10 -y
+
+      - name: Package App (Windows NSIS)
+        if: matrix.target == 'Windows'
+        shell: pwsh
+        run: |
+          $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          if (!(Test-Path $makensis)) {
+            Write-Error "makensis.exe not found"
+            exit 1
+          }
+          & $makensis insightwallet.nsi
 
       - name: Upload App
         uses: actions/upload-artifact@v4
