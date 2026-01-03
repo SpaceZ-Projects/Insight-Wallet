@@ -41,7 +41,7 @@ class Coin(Box):
             amount_label_style = Pack(
                 font_size=12,
                 text_align=CENTER,
-                margin_right=33
+                margin_right=37
             )
             fee_label_style = Pack(
                 font_size=12,
@@ -52,7 +52,7 @@ class Coin(Box):
             amount_label_style = Pack(
                 font_size=12,
                 text_align=CENTER,
-                margin_right=37
+                margin_right=33
             )
             fee_label_style = Pack(
                 font_size=12,
