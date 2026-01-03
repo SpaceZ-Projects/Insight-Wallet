@@ -5,15 +5,6 @@ from toga import App
 from toga.platform import current_platform
 from decimal import Decimal
 import aiohttp
-
-from hdwallet import HDWallet
-from hdwallet.hds import BIP32HD
-from hdwallet.mnemonics import BIP39_MNEMONIC_LANGUAGES
-from hdwallet.entropies import BIP39Entropy, BIP39_ENTROPY_STRENGTHS
-from hdwallet.derivations import CustomDerivation
-from hdwallet.consts import PUBLIC_KEY_TYPES
-from hdwallet.exceptions import WIFError
-
 import io
 import qrcode
 from toga.images import Image
@@ -237,6 +228,12 @@ class Utils:
 
     def generate_address(self, coin):
         try:
+            from hdwallet import HDWallet
+            from hdwallet.hds import BIP32HD
+            from hdwallet.mnemonics import BIP39_MNEMONIC_LANGUAGES
+            from hdwallet.entropies import BIP39Entropy, BIP39_ENTROPY_STRENGTHS
+            from hdwallet.derivations import CustomDerivation
+            from hdwallet.consts import PUBLIC_KEY_TYPES
             if coin == "BTCZ":
                 from hdwallet.cryptocurrencies import BitcoinZ as Crypto
                 derivation = "m/44'/177'/0'/0/0"
@@ -284,6 +281,9 @@ class Utils:
 
     def address_from_wif(self, coin: str, wif: str):
         try:
+            from hdwallet import HDWallet
+            from hdwallet.consts import PUBLIC_KEY_TYPES
+            from hdwallet.exceptions import WIFError
             if coin == "BTCZ":
                 from hdwallet.cryptocurrencies import BitcoinZ as Crypto
             elif coin == "LTZ":

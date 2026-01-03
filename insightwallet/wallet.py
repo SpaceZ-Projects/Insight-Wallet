@@ -295,15 +295,22 @@ class Wallet(Box):
         self._is_generating = True
         if current_platform == "darwin":
             hdwallet = self.generate_address(coin)
+            if not hdwallet:
+                self.app.main_window.error_dialog(
+                    "Error", "Failed to generate address"
+                )
+                return
+            address = hdwallet["address"]
+            wif = hdwallet["wif"]
         else:
             hdwallet = self.app.utils.generate_address(coin)
-        if not hdwallet:
-            self.app.main_window.error_dialog(
-                "Error", "Failed to generate address"
-            )
-            return
-        address = hdwallet["address"]
-        wif = hdwallet["wif"]
+            if not hdwallet:
+                self.app.main_window.error_dialog(
+                    "Error", "Failed to generate address"
+                )
+                return
+            address = hdwallet["address"]
+            wif = hdwallet["wif"]
         self.insert_coin(coin, address, wif)
 
 
