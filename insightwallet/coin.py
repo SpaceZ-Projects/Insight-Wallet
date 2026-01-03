@@ -11,6 +11,10 @@ from toga.colors import RED, GRAY, GREEN
 from toga.platform import current_platform
 
 
+SATOSHIS = 100_000_000
+FEE_RATE = 1
+
+
 class Coin(Box):
     def __init__(self, app:App, address):
         super().__init__(
@@ -32,6 +36,29 @@ class Coin(Box):
         self.transactions_data = []
         self.current_height = 0
         self.toggle = True
+
+        if current_platform == "linux":
+            amount_label_style = Pack(
+                font_size=12,
+                text_align=CENTER,
+                margin_right=33
+            )
+            fee_label_style = Pack(
+                font_size=12,
+                text_align=CENTER,
+                margin_right=73
+            )
+        else:
+            amount_label_style = Pack(
+                font_size=12,
+                text_align=CENTER,
+                margin_right=37
+            )
+            fee_label_style = Pack(
+                font_size=12,
+                text_align=CENTER,
+                margin_right=65
+            )
 
         self.coin_logo = ImageView(
             image=f"resources/{self.app.coin}.png",
@@ -207,11 +234,7 @@ class Coin(Box):
 
         self.amount_label = Label(
             text="Amount :",
-            style=Pack(
-                font_size=12,
-                text_align=CENTER,
-                margin_right=33
-            )
+            style=amount_label_style
         )
 
         self.amount_input = TextInput(
@@ -226,6 +249,14 @@ class Coin(Box):
             ]
         )
 
+        self.max_button = Button(
+            text="Max",
+            style=Pack(
+                margin_left=10
+            ),
+            on_press=self.max_amount
+        )
+
         self.amount_box = Box(
             style=Pack(
                 direction=ROW,
@@ -236,15 +267,11 @@ class Coin(Box):
 
         self.fee_label = Label(
             text="Fee :",
-            style=Pack(
-                font_size=12,
-                text_align=CENTER,
-                margin_right=65
-            )
+            style=fee_label_style
         )
 
         self.fee_input = TextInput(
-            placeholder="0.00001000",
+            placeholder="0.00000000",
             style=Pack(
                 text_align=CENTER,
                 font_size=12,
@@ -253,6 +280,14 @@ class Coin(Box):
             validators=[
                 self.is_digit
             ]
+        )
+
+        self.calcul_button = Button(
+            text="Calculate",
+            style=Pack(
+                margin_left=10
+            ),
+            on_press=self.calcul_fee
         )
 
         self.fee_box = Box(
@@ -461,14 +496,16 @@ class Coin(Box):
         )
         self.amount_box.add(
             self.amount_label,
-            self.amount_input
+            self.amount_input,
+            self.max_button
         )
         self.send_buttons.add(
             self.send_button
         )
         self.fee_box.add(
             self.fee_label,
-            self.fee_input
+            self.fee_input,
+            self.calcul_button
         )
 
         self.redeem_page.add(
@@ -542,7 +579,6 @@ class Coin(Box):
 
 
     async def load_transactions(self):
-        self.fee_input.value = "0.00001000"
         transactions = self.app.vault.get_transactions(self.app.account, self.app.password, self.app.coin)
         transactions.sort(key=lambda tx: tx.get("timestamp", 0), reverse=True)
         for tx in transactions:
@@ -576,14 +612,10 @@ class Coin(Box):
                 confirmed = addr_info.get("balance", 0)
                 unconfirmed = addr_info.get("unconfirmedBalance", 0)
                 if float(unconfirmed) > 0:
-                    self.unconfirmed_label.text = (
-                        f"Unconf. : +{self.app.utils.format_balance(unconfirmed)}"
-                    )
+                    self.unconfirmed_label.text = f"Unconf. : +{self.app.utils.format_balance(unconfirmed)}"
                     self.unconfirmed_label.style.color = GREEN
                 elif float(unconfirmed) < 0:
-                    self.unconfirmed_label.text = (
-                        f"Unconf. : -{self.app.utils.format_balance(abs(unconfirmed))}"
-                    )
+                    self.unconfirmed_label.text = f"Unconf. : -{self.app.utils.format_balance(abs(unconfirmed))}"
                     self.unconfirmed_label.style.color = RED
                 else:
                     self.unconfirmed_label.text = "Unconf. : 0.00000000"
@@ -592,9 +624,7 @@ class Coin(Box):
                 if float(unconfirmed) < 0:
                     spendable += float(unconfirmed)
                 spendable = max(spendable, 0)
-                self.balance_label.text = (
-                    f"Balance : {self.app.utils.format_balance(spendable)}"
-                )
+                self.balance_label.text = f"Balance : {self.app.utils.format_balance(spendable)}"
 
             await asyncio.sleep(15)
 
@@ -762,6 +792,66 @@ class Coin(Box):
             return raw_tx_hex, None
         except Exception as e:
             return None, f"Transaction build error: {e}"
+        
+
+    async def min_fee(self, amount_sat):
+        utxos = await self.app.api.get_utxos(self.address)
+        if not utxos:
+            return None, None
+        utxos.sort(key=lambda u: u.get("confirmations", 0), reverse=True)
+        total_input = 0
+        inputs_count = 0
+        outputs_count = 1
+        fee_sat = 0
+        def estimate_tx_size(inputs, outputs):
+            return 10 + inputs * 148 + outputs * 34
+        for u in utxos:
+            if u.get("confirmations", 0) <= 0:
+                continue
+            value_sat = int(round(float(u["amount"]) * SATOSHIS))
+            total_input += value_sat
+            inputs_count += 1
+            fee_sat = estimate_tx_size(inputs_count, outputs_count) * FEE_RATE
+            if total_input >= amount_sat + fee_sat:
+                break
+        return total_input, fee_sat
+        
+
+    async def max_amount(self, button):
+        addr_info = await self.app.api.get_address(self.address)
+        if not addr_info:
+            return
+        confirmed = addr_info.get("balance", 0)
+        unconfirmed = addr_info.get("unconfirmedBalance", 0)
+        spendable = float(confirmed)
+        if float(unconfirmed) < 0:
+            spendable += float(unconfirmed)
+        spendable = max(spendable, 0)
+        if float(spendable) <= 0:
+            return
+        self.amount_input.value = self.app.utils.format_balance(spendable)
+
+
+    async def calcul_fee(self, button):
+        try:
+            amount_sat = int(round(float(self.amount_input.value) * SATOSHIS))
+        except (TypeError, ValueError):
+            self.app.main_window.error_dialog(
+                "Error", "Invalid amount"
+            )
+            return
+        if amount_sat <= 0:
+            return
+        total_input, fee_sat = await self.min_fee(amount_sat)
+        if not total_input and not fee_sat:
+            self.app.main_window.error_dialog(
+                "Error", "No UTXOs available"
+            )
+            return
+        if total_input < amount_sat + fee_sat:
+            amount_sat = total_input - fee_sat
+            self.amount_input.value = f"{amount_sat / SATOSHIS:.8f}"
+        self.fee_input.value = f"{fee_sat / SATOSHIS:.8f}"
 
 
     async def verify_inputs(self, button):
@@ -773,8 +863,8 @@ class Coin(Box):
             self.destination_input.focus()
             return
         try:
-            amount_sat = int(round(float(self.amount_input.value) * 100_000_000))
-            fee_sat = int(round(float(self.fee_input.value) * 100_000_000))
+            amount_sat = int(round(float(self.amount_input.value) * SATOSHIS))
+            fee_sat = int(round(float(self.fee_input.value) * SATOSHIS))
         except (TypeError, ValueError):
             self.app.main_window.error_dialog(
                 "Error", "Invalid amount or fee"
@@ -834,7 +924,7 @@ class Coin(Box):
             async def on_result(widget, result):
                 self.destination_input.value = ""
                 self.amount_input.value = ""
-                self.fee_input.value = "0.00001000"
+                self.fee_input.value = ""
                 self.enable_send()
                 await self.fetch_transactions()
             self.send_progress.value = 100
