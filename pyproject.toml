@@ -2,7 +2,7 @@
 [tool.briefcase]
 project_name = "InsightWallet"
 bundle = "com.btcz.insightwallet"
-version = "1.1.0"
+version = "1.2.0"
 url = "https://github.com/SpaceZ-Projects/Insight-Wallet"
 license.file = "LICENSE"
 author = "BTCZCommunity"
@@ -24,6 +24,17 @@ test_sources = [
 requires = []
 test_requires = [
     "pytest",
+]
+
+[tool.briefcase.app.insightwallet.windows]
+requires = [
+    "toga-winforms==0.5.3",
+    "aiohttp==3.13.2",
+    "qrcode==8.2",
+    "pillow==12.0.0",
+    "pynacl==1.6.1",
+    "git+https://github.com/ezzygarmyz/hdwallet.git",
+    "certifi==2025.11.12"
 ]
 
 [tool.briefcase.app.insightwallet.macOS]
@@ -169,15 +180,4 @@ linuxdeploy_plugins = [
 flatpak_runtime = "org.gnome.Platform"
 flatpak_runtime_version = "48"
 flatpak_sdk = "org.gnome.Sdk"
-
-[tool.briefcase.app.insightwallet.windows]
-requires = [
-    "toga-winforms==0.5.3",
-    "aiohttp==3.13.2",
-    "qrcode==8.2",
-    "pillow==12.0.0",
-    "pynacl==1.6.1",
-    "git+https://github.com/ezzygarmyz/hdwallet.git",
-    "certifi==2025.11.12"
-]
 
