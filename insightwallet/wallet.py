@@ -294,23 +294,16 @@ class Wallet(Box):
             return
         self._is_generating = True
         if current_platform == "darwin":
-            hdwallet = self.generate_address(coin)
-            if not hdwallet:
-                self.app.main_window.error_dialog(
-                    "Error", "Failed to generate address"
-                )
-                return
-            address = hdwallet["address"]
-            wif = hdwallet["wif"]
-        else:
-            hdwallet = self.app.utils.generate_address(coin)
-            if not hdwallet:
-                self.app.main_window.error_dialog(
-                    "Error", "Failed to generate address"
-                )
-                return
-            address = hdwallet["address"]
-            wif = hdwallet["wif"]
+            hdwallet = self.app.loop.create_task(self.generate_address(coin))
+            return
+        hdwallet = self.app.utils.generate_address(coin)
+        if not hdwallet:
+            self.app.main_window.error_dialog(
+                "Error", "Failed to generate address"
+            )
+            return
+        address = hdwallet["address"]
+        wif = hdwallet["wif"]
         self.insert_coin(coin, address, wif)
 
 
@@ -331,25 +324,22 @@ class Wallet(Box):
                 self.app.main_window.error_dialog(
                     "Error", f"Failed to generate address: {stderr.decode()}"
                 )
-                return None
+                return
             raw = stdout.decode().strip()
             try:
                 data = json.loads(raw)
-                return {
-                    "address": data["address"],
-                    "wif": data["wif"]
-                }
+                address = data["address"]
+                wif = data["wif"]
+                self.insert_coin(coin, address, wif)
             except json.JSONDecodeError as e:
                 self.app.main_window.error_dialog(
                     "Error",
                     f"Invalid JSON from address generator:\n{raw}"
                 )
-                return None
         except Exception as e:
             self.app.main_window.error_dialog(
                 "Error", f"Failed to generate address: {e}"
             )
-            return None
 
 
     def manage_coin(self, coin, button):
