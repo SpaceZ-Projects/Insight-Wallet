@@ -2,7 +2,7 @@
 import asyncio
 import subprocess
 import json
-from toga import App, Box, Label, Button, Divider, Command, Group
+from toga import App, Box, Label, Button, Divider, Command, Group, ScrollContainer
 from toga.style.pack import Pack
 from toga.constants import COLUMN, ROW, CENTER, Direction, BOLD, NORMAL
 from toga.platform import current_platform
@@ -93,11 +93,9 @@ class Wallet(Box):
             text="Coins List",
             style=Pack(
                 font_size=11,
-                text_align=CENTER,
                 flex=1,
                 font_weight=BOLD,
-                margin_top=20,
-                margin_bottom=20
+                margin=(10,0,10,20)
             )
         )
 
@@ -116,6 +114,13 @@ class Wallet(Box):
                 flex=1,
                 align_items=CENTER,
                 gap=5
+            )
+        )
+
+        self.coins_container = ScrollContainer(
+            style=Pack(
+                flex=1,
+                margin_bottom=10
             )
         )
 
@@ -158,9 +163,10 @@ class Wallet(Box):
         )
         self.coins_panel.add(
             self.coins_label,
-            self.coins_list,
+            self.coins_container,
             self.add_button
         )
+        self.coins_container.content = self.coins_list
 
         self.insert_toolbar()
 
@@ -233,12 +239,11 @@ class Wallet(Box):
         
     def show_add_coins(self, button):
         self.add_coins_list.clear()
+        self.coins_container.content = self.add_coins_list
         self.coins_panel.remove(
-            self.coins_list,
             self.add_button
         )
         self.coins_panel.add(
-            self.add_coins_list,
             self.cancel_button
         )
         self.coins_label.text = "+ Add Coin"
@@ -265,13 +270,12 @@ class Wallet(Box):
     def restore_coins_list(self):
         self.coins_label.text = "Coins List"
         self.coins_panel.remove(
-            self.add_coins_list,
             self.cancel_button
         )
         self.coins_panel.add(
-            self.coins_list,
             self.add_button
         )
+        self.coins_container.content = self.coins_list
 
 
     def insert_coin(self, coin, address, wif):

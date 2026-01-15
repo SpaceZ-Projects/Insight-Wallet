@@ -53,5 +53,12 @@
         "network": "ycash",
         "api": "https://yecblockexplorer.com/api/v2",
         "donation_address": "s1iRVFkHDaaByv9cEaFeDqjrUQ3Pr1sMHh7"
+    },
+
+    "FLUX" : {
+        "name": "Flux",
+        "network": "flux",
+        "api": "https://explorer.runonflux.io/api",
+        "donation_address": "t1T3M7XBJNtt1qAYznyPiSofbiioZWGA6iq"
     }
 }

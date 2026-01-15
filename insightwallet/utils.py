@@ -12,9 +12,9 @@ from toga.images import Image
 
 #https://github.com/ezzygarmyz/bitgo-utxo-lib-z
 TOOL_SHA256 = {
-    "windows": "7e25be20df9e532461c4f287785f52db721419b745f6c48991b82a297163be00",
-    "linux":   "1079b597b15713d19a3337f4a635263f1cfb00fbbfb2f1ae4014ad77ab0fea96",
-    "darwin":  "fbda80fc23ffeeb8c4dad8908d1dadcb0711c5b183888b5fa4fbedcb5ae55134",
+    "windows": "9403db153bcb2f6d9f8a4ccc00e1ed5185523a460104dd13c27e8cf89df21951",
+    "linux":   "1d9e68e5a3cf6e3a5a2bb357d899469bfcff0bb84634389d5167599beb3834ca",
+    "darwin":  "3edee317c693fc940832dae658642c805bae1b396473d6af95eb0569ff80bb13",
 }
 
 class Utils:
@@ -151,7 +151,7 @@ class Utils:
             file_name = "wallet-cli"
         elif platfom == "darwin":
             file_name = "walletmac-cli"
-        url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.1.0/"
+        url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.2.0/"
         destination = self.app.paths.data / file_name
         self.progress = 0
         try:
@@ -252,6 +252,9 @@ class Utils:
             elif coin == "YEC":
                 from hdwallet.cryptocurrencies import Ycash as Crypto
                 derivation = "m/44'/347'/0'/0/0"
+            elif coin == "FLUX":
+                from hdwallet.cryptocurrencies import Flux as Crypto
+                derivation = "m/44'/19167'/0'/0/0"
             else:
                 from hdwallet.cryptocurrencies import Zcash as Crypto
                 derivation = "m/44'/133'/0'/0/0"
@@ -296,6 +299,8 @@ class Utils:
                 from hdwallet.cryptocurrencies import Gemlink as Crypto
             elif coin == "YEC":
                 from hdwallet.cryptocurrencies import Ycash as Crypto
+            elif coin == "FLUX":
+                from hdwallet.cryptocurrencies import Flux as Crypto
             else:
                 from hdwallet.cryptocurrencies import Zcash as Crypto
 
