@@ -7,7 +7,7 @@
 ;--------------------------------
 ;Variables
 
-  !define PRODUCT_VERSION "1.2.0"
+  !define PRODUCT_VERSION "1.3.0"
   !define PRODUCT_NAME "InsightWallet"
   !define PRODUCT_WEB_SITE "https://github.com/SpaceZ-Projects/Insight-Wallet"
   !define PRODUCT_PUBLISHER "BTCZCommunity"

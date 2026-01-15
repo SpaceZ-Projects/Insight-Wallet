@@ -56,7 +56,7 @@ def main():
     app = InsightWallet(
         formal_name="InsightWallet",
         app_id="com.btcz.insightwallet",
-        version="1.2.0",
+        version="1.3.0",
         icon="resources/insightwallet"
     )
     app.main_loop()
