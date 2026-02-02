@@ -9,6 +9,7 @@ from toga.constants import COLUMN, ROW, CENTER, BOLD, ITALIC, Direction, END
 from toga.style.pack import Pack
 from toga.colors import RED, GRAY, GREEN
 from toga.platform import current_platform
+from .multisig import GenerateMultisig, CreateMultisig, PartialMultisig, FinalizeMultisig
 
 
 SATOSHIS = 100_000_000
@@ -440,6 +441,61 @@ class Coin(Box):
             content=self.redeem_page
         )
 
+        self.multisig_page = Box(
+            style=Pack(
+                direction=COLUMN,
+                flex=1
+            )
+        )
+
+        self.generate_page = GenerateMultisig(self.app, self.network)
+
+        self.generate_multisig = OptionItem(
+            text=" Generate ",
+            content=self.generate_page
+        )
+
+        self.create_page = CreateMultisig(self.app, self.network)
+
+        self.create_multisig = OptionItem(
+            text=" Create ",
+            content=self.create_page
+        )
+
+        self.partial_page = PartialMultisig(self.app, self.network)
+
+        self.partial_multisig = OptionItem(
+            text=" Partial ",
+            content=self.partial_page
+        )
+
+        self.finalize_page = FinalizeMultisig(self.app, self.network)
+
+        self.finalize_multisig = OptionItem(
+            text=" Finalize ",
+            content=self.finalize_page
+        )
+
+        self.multisig_container = OptionContainer(
+            style=Pack(
+                font_size=11,
+                font_style=ITALIC,
+                flex=1
+            ),
+            content=[
+                self.generate_multisig,
+                self.create_multisig,
+                self.partial_multisig,
+                self.finalize_multisig
+            ]
+        )
+        self.multisig_page.add(self.multisig_container)
+
+        self.multisig_option = OptionItem(
+            text=" Multisig ",
+            content=self.multisig_page
+        )
+
         self.coin_container = OptionContainer(
             style=Pack(
                 font_size=12,
@@ -454,7 +510,8 @@ class Coin(Box):
                 self.transaction_option,
                 self.receive_option,
                 self.send_option,
-                self.redeem_option
+                self.redeem_option,
+                self.multisig_option
             ]
         )
 
@@ -767,6 +824,7 @@ class Coin(Box):
         cmd = [
             wallet_cli,
             "--network", network,
+            "--create-signed",
             "--wif", wif,
             "--to", destination,
             "--amount", str(amount_sat),
@@ -896,7 +954,7 @@ class Coin(Box):
         for u in utxos:
             if u.get("confirmations", 0) <= 0:
                 continue
-            value_sat = int(round(float(u["amount"]) * 100_000_000))
+            value_sat = int(round(float(u["amount"]) * SATOSHIS))
             inputs_to_use.append(u)
             total_input += value_sat
             if total_input >= amount_sat + fee_sat:
@@ -912,14 +970,14 @@ class Coin(Box):
             self.app.password,
             self.app.coin
         )
-        raw_tx_hex, error = await self.build_transaction(wif, inputs_to_use, destination, amount_sat, fee_sat)
+        signed_raw_tx_hex, error = await self.build_transaction(wif, inputs_to_use, destination, amount_sat, fee_sat)
         if error:
             self.app.main_window.error_dialog(
                 "Error", error
             )
             self.enable_send()
             return
-        success, error = await self.app.api.broadcast_tx(raw_tx_hex)
+        success, error = await self.app.api.broadcast_tx(signed_raw_tx_hex)
         if success:
             async def on_result(widget, result):
                 self.destination_input.value = ""
@@ -1019,10 +1077,10 @@ class Coin(Box):
     def on_redeem_balance(self, address, wif):
         self.disable_redeem()
         destination = self.app.vault.get_coin_address(self.app.account, self.app.password, self.app.coin)
-        self.app.loop.create_task(self.collet_redeem_utxos(destination, address, wif))
+        self.app.loop.create_task(self.collect_redeem_utxos(destination, address, wif))
         
 
-    async def collet_redeem_utxos(self, destination, address, wif):
+    async def collect_redeem_utxos(self, destination, address, wif):
         utxos = await self.app.api.get_utxos(address)
         if not utxos:
             self.app.main_window.error_dialog(

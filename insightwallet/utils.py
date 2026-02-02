@@ -12,9 +12,9 @@ from toga.images import Image
 
 #https://github.com/ezzygarmyz/bitgo-utxo-lib-z
 TOOL_SHA256 = {
-    "windows": "9403db153bcb2f6d9f8a4ccc00e1ed5185523a460104dd13c27e8cf89df21951",
-    "linux":   "1d9e68e5a3cf6e3a5a2bb357d899469bfcff0bb84634389d5167599beb3834ca",
-    "darwin":  "3edee317c693fc940832dae658642c805bae1b396473d6af95eb0569ff80bb13",
+    "windows": "237753cb5b9b8f699dc81e123bc61387021ff7f560293b16757ea678568ad5e8",
+    "linux":   "90e4947f255ff621a86cb7f9bb8eb23b73d3cb3150a489357a23146cdc718a80",
+    "darwin":  "cb95fd100d2b912159e50089db6eb73e0692650df826d13aeaadf272bafbc488",
 }
 
 class Utils:
@@ -151,7 +151,7 @@ class Utils:
             file_name = "wallet-cli"
         elif platfom == "darwin":
             file_name = "walletmac-cli"
-        url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.2.0/"
+        url = "https://github.com/ezzygarmyz/bitgo-utxo-lib-z/releases/download/v1.3.0/"
         destination = self.app.paths.data / file_name
         self.progress = 0
         try:

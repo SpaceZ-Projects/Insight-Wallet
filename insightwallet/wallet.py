@@ -121,7 +121,8 @@ class Wallet(Box):
             style=Pack(
                 flex=1,
                 margin_bottom=10
-            )
+            ),
+            content=self.coins_list
         )
 
         self.coins_panel = Box(
@@ -166,7 +167,6 @@ class Wallet(Box):
             self.coins_container,
             self.add_button
         )
-        self.coins_container.content = self.coins_list
 
         self.insert_toolbar()
 
@@ -351,21 +351,12 @@ class Wallet(Box):
             return
         if self.coin_view:
             self.coin_view.toggle = None
-        self.app.loop.create_task(self.update_buttons(button))
         self.app.coin = coin
         address = self.app.vault.get_coin_address(self.app.account, self.app.password, coin)
         if address:
             self.coin_manage.clear()
             self.coin_view = Coin(self.app, address)
             self.coin_manage.add(self.coin_view)
-            
-
-    async def update_buttons(self, button):
-        for widget in self.coins_list.children:
-            widget.style.width = 100
-            widget.style.font_weight = NORMAL
-        button.style.width = 120
-        button.style.font_weight = BOLD
 
 
     def show_about(self, cmd):
